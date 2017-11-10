@@ -1,0 +1,46 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet author="vassaeve" id="CREATE_BNKSEEK">
+        <preConditions onFail="MARK_RAN">            
+            <not>
+                <tableExists  tableName="BNKSEEK"/>
+            </not>
+        </preConditions>
+        <createTable tableName="BNKSEEK">
+            <column autoIncrement="true" name="ID" type="BIGINT"  startWith="1" incrementBy="1">
+                <constraints primaryKey="true" primaryKeyName="SYS_PK_10110"/>
+            </column>
+            <column name="real" type="VARCHAR(4)"/>
+            <column name="pzn" type="VARCHAR(2)"/>
+            <column name="uer" type="VARCHAR(1)"/>
+            <column name="rgn" type="VARCHAR(2)"/>
+            <column name="ind" type="VARCHAR(6)"/>
+            
+            <column name="tnp" type="VARCHAR(1)"/>
+            <column name="nnp" type="VARCHAR(25)"/>
+            <column name="adr" type="VARCHAR(30)"/>
+            <column name="rkc" type="VARCHAR(9)"/>
+            <column name="namep" type="VARCHAR(45)"/>
+            <column name="telef" type="VARCHAR(25)"/>
+            <column name="regn" type="VARCHAR(9)"/>
+            <column name="okpo" type="VARCHAR(8)"/>
+            <column name="dt_izm" type="date"/>
+            <column name="ksnp" type="VARCHAR(20)"/>
+            <column name="date_in" type="date"/>
+            <column name="date_ch" type="date"/>
+        </createTable>
+    </changeSet>
+      
+    <changeSet author="vassaeve" id="ADD_BNKSEEK_FLAG">
+        <preConditions onFail="MARK_RAN">            
+            <not>
+                <columnExists  tableName="BNKSEEK" columnName="FLAG"/>
+            </not>
+        </preConditions>  
+        <addColumn tableName="BNKSEEK">
+            <column defaultValueNumeric="1" name="FLAG" type="INTEGER"/>
+        </addColumn>
+    </changeSet>
+
+    
+</databaseChangeLog>
