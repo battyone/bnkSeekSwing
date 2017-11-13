@@ -71,12 +71,7 @@
             <version>1.4</version>
             <type>jar</type>
         </dependency>
-        <dependency>
-            <groupId>com.cbr</groupId>
-            <artifactId>BankSeekSwing</artifactId>
-            <version>0.1</version>
-            <type>jar</type>
-        </dependency>
+
     </dependencies>
 
 
