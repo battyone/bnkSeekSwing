@@ -1,5 +1,7 @@
 package com.cbr.bankseekswing.utils;
 
+import com.cbr.bankseekswing.helper.BnkSeekHelper;
+import com.cbr.bankseekswing.pojo.BnkSeek;
 import com.linuxense.javadbf.DBFReader;
 import com.linuxense.javadbf.DBFRow;
 import com.linuxense.javadbf.DBFUtils;
@@ -7,14 +9,19 @@ import com.linuxense.javadbf.DBFUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Set;
+import java.sql.SQLException;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author vassaeve
  */
 public class Loader {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Loader.class);
 
     private static String[] excludedFields = {"VKEY", "NAMEN", "NEWKS", "PERMFO", "SROK", "AT1", "AT2", "CKS", "VKEYDEL", "DT_IZMR"};
 
@@ -23,38 +30,23 @@ public class Loader {
      *
      * @param dbfFile
      * @throws FileNotFoundException
+     * @throws java.lang.IllegalAccessException
+     * @throws java.lang.ClassNotFoundException
+     * @throws java.sql.SQLException
      */
-    public static void loadBnkSeek(File dbfFile) throws FileNotFoundException {
-
-        Set<String> fieldsForLoad = new HashSet<>();
-        String excludedFieldsStr = "," + String.join(",", excludedFields) + ",";
-
+    public static void loadBnkSeek(File dbfFile) throws FileNotFoundException, IllegalAccessException, ClassNotFoundException, SQLException, IOException {
 
         FileInputStream inputStream = new FileInputStream(dbfFile);
-        //TODO определять кодировку? кодировка CP866!!!
-        DBFReader reader = new DBFReader(inputStream, Charset.forName("cp866"), false);
-        int numberOfFields = reader.getFieldCount();
-
-        String fieldName;
-        for (int i = 0; i < numberOfFields; i++) {
-            fieldName = reader.getField(i).getName().toUpperCase();
-            if (!excludedFieldsStr.contains(fieldName)) {
-                fieldsForLoad.add(fieldName);
-            }
-        }
-
+        DBFReader reader = null;
         DBFRow row;
-
-        String[] fields = fieldsForLoad.toArray(new String[fieldsForLoad.size()]);
-        while ((row = reader.nextRow()) != null) {
-            for (String field : fields) {
-
-                System.out.print(row.getObject(field) + "\t");
-
+        try {
+            reader = new DBFReader(inputStream, Charset.forName("cp866"), false);
+            while ((row = reader.nextRow()) != null) {
+                BnkSeek bnk = BnkSeekHelper.createBnkSeekEntity(row);
+                BnkDbUtils.createOneEntity(bnk);
             }
-            System.out.println();
+        } finally {
+            DBFUtils.close(reader);
         }
-
-        DBFUtils.close(reader);
     }
 }

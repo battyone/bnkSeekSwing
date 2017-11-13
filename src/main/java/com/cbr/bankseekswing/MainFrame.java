@@ -1,10 +1,43 @@
 package com.cbr.bankseekswing;
 
-import com.cbr.bankseekswing.utils.Loader;
-import java.io.FileNotFoundException;
+import com.cbr.bankseekswing.helper.BnkSeekHelper;
+import com.cbr.bankseekswing.dbview.MyTableModel;
+import com.cbr.bankseekswing.helper.ReferenceItemHelper;
+import com.cbr.bankseekswing.pojo.BnkSeek;
+import com.cbr.bankseekswing.pojo.Pzn;
+import com.cbr.bankseekswing.pojo.ReferenceItem;
+import com.cbr.bankseekswing.pojo.Reg;
+import com.cbr.bankseekswing.pojo.Tnp;
+import com.cbr.bankseekswing.pojo.Uer;
+import com.cbr.bankseekswing.utils.BnkDbUtils;
+import static com.cbr.bankseekswing.utils.BnkDbUtils.getConnection;
+import com.cbr.bankseekswing.utils.EntityDescriptions;
+import com.linuxense.javadbf.DBFReader;
+import com.linuxense.javadbf.DBFRow;
+import com.linuxense.javadbf.DBFUtils;
+import java.awt.Cursor;
+import java.awt.HeadlessException;
+import java.awt.Rectangle;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.JViewport;
+import javax.swing.SwingWorker;
+import javax.swing.filechooser.FileFilter;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -15,13 +48,16 @@ public class MainFrame extends javax.swing.JFrame {
 
     private static final long serialVersionUID = 533394492104588037L;
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainFrame.class);
+
+    private MyTableModel<BnkSeek> bnkSeekModel;
 
     /**
      * Creates new form MainFrame
      */
     public MainFrame() {
         initComponents();
+        postInit();
     }
 
     /**
@@ -35,11 +71,30 @@ public class MainFrame extends javax.swing.JFrame {
 
         jToolBar1 = new javax.swing.JToolBar();
         loadDbfButton = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
         jPanel1 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        BNKSEEK = new javax.swing.JTable();
+        statusBar = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        filterPanel = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        newnumFilter = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        pznComboBox = new javax.swing.JComboBox<>();
+        filterButton = new javax.swing.JButton();
+        regComboBox = new javax.swing.JComboBox<>();
+        jButton2 = new javax.swing.JButton();
+        referenceToolBar = new javax.swing.JToolBar();
+        addButton = new javax.swing.JButton();
+        editButton = new javax.swing.JButton();
+        jSeparator1 = new javax.swing.JToolBar.Separator();
+        removeButton = new javax.swing.JButton();
+        refreshButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("БИК");
+        setTitle("БИК. Администрирование");
+        getContentPane().setLayout(new java.awt.BorderLayout(0, 2));
 
         jToolBar1.setRollover(true);
 
@@ -54,24 +109,136 @@ public class MainFrame extends javax.swing.JFrame {
         });
         jToolBar1.add(loadDbfButton);
 
-        jButton2.setText("jButton2");
-        jButton2.setFocusable(false);
-        jButton2.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButton2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jToolBar1.add(jButton2);
-
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 980, Short.MAX_VALUE)
+        jPanel1.setLayout(new java.awt.BorderLayout());
+
+        BNKSEEK.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                BNKSEEKMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(BNKSEEK);
+
+        jPanel1.add(jScrollPane1, java.awt.BorderLayout.CENTER);
+
+        statusBar.setText(" ");
+        statusBar.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jPanel1.add(statusBar, java.awt.BorderLayout.SOUTH);
+
+        jPanel2.setLayout(new java.awt.BorderLayout());
+
+        filterPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Фильтр"));
+
+        jLabel1.setText("БИК:");
+
+        jLabel2.setText("Регион (REG):");
+
+        jLabel3.setText("Тип (PZN):");
+
+        filterButton.setText("Применить фильтр");
+        filterButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                filterButtonActionPerformed(evt);
+            }
+        });
+
+        jButton2.setText("Сбросить");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout filterPanelLayout = new javax.swing.GroupLayout(filterPanel);
+        filterPanel.setLayout(filterPanelLayout);
+        filterPanelLayout.setHorizontalGroup(
+            filterPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(filterPanelLayout.createSequentialGroup()
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(newnumFilter, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(regComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(pznComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 247, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(filterButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
+                .addContainerGap())
         );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 389, Short.MAX_VALUE)
+        filterPanelLayout.setVerticalGroup(
+            filterPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(filterPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(newnumFilter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel2)
+                .addComponent(jLabel3)
+                .addComponent(pznComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(filterButton)
+                .addComponent(regComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jButton2))
+            .addGroup(filterPanelLayout.createSequentialGroup()
+                .addGap(3, 3, 3)
+                .addComponent(jLabel1))
         );
+
+        jPanel2.add(filterPanel, java.awt.BorderLayout.NORTH);
+
+        referenceToolBar.setRollover(true);
+
+        addButton.setText("Добавить");
+        addButton.setFocusable(false);
+        addButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        addButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        addButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addButtonActionPerformed(evt);
+            }
+        });
+        referenceToolBar.add(addButton);
+
+        editButton.setText("Редактировать");
+        editButton.setFocusable(false);
+        editButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        editButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        editButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editButtonActionPerformed(evt);
+            }
+        });
+        referenceToolBar.add(editButton);
+        referenceToolBar.add(jSeparator1);
+
+        removeButton.setText("Удалить");
+        removeButton.setFocusable(false);
+        removeButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        removeButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        removeButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeButtonActionPerformed(evt);
+            }
+        });
+        referenceToolBar.add(removeButton);
+
+        refreshButton.setText("Обновить");
+        refreshButton.setFocusable(false);
+        refreshButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        refreshButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        refreshButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                refreshButtonActionPerformed(evt);
+            }
+        });
+        referenceToolBar.add(refreshButton);
+
+        jPanel2.add(referenceToolBar, java.awt.BorderLayout.CENTER);
+
+        jPanel1.add(jPanel2, java.awt.BorderLayout.NORTH);
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
 
@@ -80,23 +247,373 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void loadDbfButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDbfButtonActionPerformed
         JFileChooser chooser = new JFileChooser();
-        FileNameExtensionFilter filter = new FileNameExtensionFilter("DBF", "dbf");
+
+        FileFilter filter = new FileFilter() {
+            @Override
+            public boolean accept(File f) {
+                return f.isDirectory() || f.getName().toLowerCase().endsWith("bnkseek.dbf");
+            }
+
+            @Override
+            public String getDescription() {
+                return "DBF";
+            }
+        };
         chooser.setFileFilter(filter);
         int returnVal = chooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+            final File dbfFile = chooser.getSelectedFile();
+            Object[] options = {"Да", "Нет"};
             try {
-                Loader.loadBnkSeek(chooser.getSelectedFile());
-            } catch (FileNotFoundException ex) {
+                String path = dbfFile.getParent();
+                final Class[] classes = {Pzn.class, Reg.class, Tnp.class, Uer.class};
+                for (Class cls : classes) {
+                    String fileName = cls.getSimpleName().toUpperCase() + ".DBF";
+                    File file = new File(path + File.separator + fileName);
+                    if (!file.exists()) {
+                        JOptionPane.showMessageDialog(this, "<html>Отсутствует для загрузки файл " + fileName + "<br>Разместите dbf-файл в том же каталоге, что и BNKSEEK.DBF.</html>", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+                int countBnkSeekRow = BnkDbUtils.countBnkSeek();
+                if (countBnkSeekRow == 0 || (countBnkSeekRow != 0 && JOptionPane.showOptionDialog(this, "БД не пуста. Попытаемся загрузить?", "Загрузка", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) == JOptionPane.YES_OPTION)) {
+
+                    loadDbfButton.setEnabled(false);
+
+                    SwingWorker<Integer, Integer> worker = new SwingWorker<Integer, Integer>() {
+
+                        @Override
+                        protected Integer doInBackground() throws Exception {
+
+                            FileInputStream inputStream = new FileInputStream(dbfFile);
+                            DBFReader reader = null;
+                            DBFRow row;
+                            Connection conn = null;
+                            PreparedStatement ps = null;
+                            int count = 0;
+                            try {
+
+                                conn = getConnection();
+                                reader = new DBFReader(inputStream, Charset.forName("cp866"), false);
+
+                                ps = conn.prepareStatement(EntityDescriptions.BNKSEEK.getINSERT_SQL());
+                                Map<String, EntityDescriptions.FieldDescription> descriptions = EntityDescriptions.BNKSEEK.getFieldsDescriptions();
+                                EntityDescriptions.FieldDescription fieldDescription;
+
+                                while ((row = reader.nextRow()) != null) {
+                                    BnkSeek entity = BnkSeekHelper.createBnkSeekEntity(row);
+
+                                    int i = 1;
+                                    for (String field : descriptions.keySet()) {
+                                        fieldDescription = descriptions.get(field);
+                                        Object value = FieldUtils.readField(entity, field, true);
+                                        switch (fieldDescription.getType().getTypeName()) {
+                                            case "java.lang.String":
+                                                ps.setString(i, value.toString());//???
+                                                break;
+                                            default:
+                                                ps.setObject(i, value);
+                                        }
+                                        i++;
+                                    }
+                                    try {
+                                        ps.executeUpdate();
+                                        publish(++count);
+                                    } catch (Exception ex) {
+                                        //неудачная попытка
+                                    }
+                                }
+
+                                //сюда же воткнемся с загрузкой попутных справочников
+                                //todo вытащить в отдельный поток?
+                                for (Class cls : classes) {
+                                    String fileName = cls.getSimpleName().toUpperCase() + ".DBF";
+                                    File file = new File(path + File.separator + fileName);
+                                    DBFReader readerRef = null;
+                                    DBFRow rowRef;
+                                    try {
+                                        readerRef = new DBFReader(new FileInputStream(file), Charset.forName("cp866"), false);
+                                        EntityDescriptions descriptionByEnum = EntityDescriptions.valueOf(cls.getSimpleName().toUpperCase());
+                                        Map<String, EntityDescriptions.FieldDescription> refDescriptions = descriptionByEnum.getFieldsDescriptions();
+
+                                        PreparedStatement psRef = conn.prepareStatement(descriptionByEnum.getINSERT_SQL());
+                                        while ((rowRef = readerRef.nextRow()) != null) {
+                                            ReferenceItem item = ReferenceItemHelper.createReferenceEntity(cls, rowRef);
+
+                                            int i = 1;
+                                            for (String field : refDescriptions.keySet()) {
+                                                Object value = FieldUtils.readField(item, field, true);
+                                                psRef.setString(i, value + "");
+                                                i++;
+                                            }
+                                            try {
+                                                psRef.executeUpdate();//вдруг дубликаты?
+                                            } catch (Exception ex) {
+                                            }
+                                        }
+                                    } catch (Exception ex) {
+                                        //не загрузили 
+                                    } finally {
+                                        DBFUtils.close(readerRef);
+                                    }
+                                }
+
+                            } catch (IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
+                                ex.printStackTrace();
+                            } finally {
+                                DBFUtils.close(reader);
+                                if (ps != null) {
+                                    try {
+                                        ps.close();
+                                    } catch (SQLException e) {
+                                    }
+                                }
+                                if (conn != null) {
+                                    try {
+                                        conn.close();
+                                    } catch (SQLException e) {
+                                    }
+                                }
+                            }
+
+                            return count;
+                        }
+
+                        @Override
+                        public void done() {
+                            try {
+                                int rowsUploaded = get(); //wait
+                                statusBar.setText("Всего загружено " + rowsUploaded + " записей.");
+                                loadDbfButton.setEnabled(true);
+
+                                refreshBnkSeek(null);
+                            } catch (IOException | ClassNotFoundException | IllegalAccessException | InterruptedException | SQLException | ExecutionException ex) {
+                            }
+                        }
+
+                        @Override
+                        protected void process(List<Integer> chunks) {
+                            int i = chunks.get(chunks.size() - 1);
+                            statusBar.setText(String.format("Загружено %10d записей", i));
+                        }
+                    };
+
+                    worker.execute();
+                }
+
+            } catch (HeadlessException | IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+                LOGGER.error(ex.getMessage());
             }
         }
     }//GEN-LAST:event_loadDbfButtonActionPerformed
 
+    private void refreshBnkSeek(Map<String, String> filter) throws ClassNotFoundException, SQLException, IOException, IllegalAccessException {
+
+        if (bnkSeekModel == null) {
+            bnkSeekModel = new MyTableModel<>(BnkSeek.class);
+
+            Map<String, EntityDescriptions.FieldDescription> descriptions = EntityDescriptions.BNKSEEK.getFieldsDescriptions();
+            int colNum = 0;
+
+            for (String fieldName : descriptions.keySet()) {
+                EntityDescriptions.FieldDescription description = descriptions.get(fieldName);
+                if (description.isVisible()) {
+                    bnkSeekModel.addColumnDescription(colNum, fieldName, description.getDescription());
+                    colNum++;
+                }
+            }
+        }
+        List<BnkSeek> rows = BnkDbUtils.loadAllBnkSeek(filter);
+        bnkSeekModel.setRows(rows);
+        BNKSEEK.setModel(bnkSeekModel);
+
+    }
+
+    private void editButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editButtonActionPerformed
+        if (BNKSEEK.getSelectedRow() == -1) {
+            return;
+        }
+        BnkSeekEditForm dlg = new BnkSeekEditForm(this, true);
+        dlg.setNew(false);
+        int modelIndex = BNKSEEK.convertRowIndexToModel(BNKSEEK.getSelectedRow());
+        BnkSeek currentRow = bnkSeekModel.getRow(modelIndex);
+        dlg.setObj(currentRow);
+        dlg.setLocationRelativeTo(this);
+        dlg.pack();
+        dlg.setVisible(true);
+        if (dlg.getReturnStatus() == BnkSeekEditForm.RET_OK) {
+            this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            BnkSeek editRow = dlg.getObj();
+            try {
+                BnkDbUtils.editOneEntity(editRow);
+
+                bnkSeekModel.setRow(modelIndex, editRow);
+                BNKSEEK.setModel(bnkSeekModel);
+                BNKSEEK.changeSelection(BNKSEEK.getSelectedRow(), 0, false, false);
+
+            } catch (IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                LOGGER.error("", ex);
+            }
+        }
+        this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+    }//GEN-LAST:event_editButtonActionPerformed
+
+    private void refreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_refreshButtonActionPerformed
+        try {
+            refreshBnkSeek(null);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_refreshButtonActionPerformed
+
+    private void BNKSEEKMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_BNKSEEKMouseClicked
+        if (evt.getClickCount() > 1) {
+            editButton.doClick();
+        }
+    }//GEN-LAST:event_BNKSEEKMouseClicked
+
+    private BnkSeek getCurrentRow() {
+        if (BNKSEEK.getSelectedRow() != -1) {
+            int modelIndex = BNKSEEK.convertRowIndexToModel(BNKSEEK.getSelectedRow()); //отсортировано как-то пользователем?
+            return bnkSeekModel.getRow(modelIndex);
+        }
+        return null;
+    }
+
+    private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonActionPerformed
+        if (BNKSEEK.getSelectedRow() == -1) {
+            return;
+        }
+
+        BnkSeek row = getCurrentRow(); //todo множествееный выбор.
+        if (row != null) {
+
+            int modelIndex = BNKSEEK.convertRowIndexToModel(BNKSEEK.getSelectedRow());
+
+            Object[] options = {"Да", "Нет"};
+            if (JOptionPane.showOptionDialog(
+                    this,
+                    "Вы уверены в необходимости удаления записи?",
+                    "Удаление",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[1]) == JOptionPane.YES_OPTION) {
+                try {
+                    BnkDbUtils.deleteOneEntity(row);
+                    bnkSeekModel.removeRow(modelIndex);
+
+                    BNKSEEK.setModel(bnkSeekModel);
+                } catch (IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
+                    LOGGER.error(ex.getMessage());
+                }
+            }
+        }
+    }//GEN-LAST:event_removeButtonActionPerformed
+
+    private void addButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addButtonActionPerformed
+
+        BnkSeekEditForm dlg = new BnkSeekEditForm(this, true);
+        dlg.setNew(true);
+
+        BnkSeek bnkSeek = new BnkSeek();
+        dlg.setObj(bnkSeek);
+        dlg.setLocationRelativeTo(this);
+        dlg.pack();
+        dlg.setVisible(true);
+        if (dlg.getReturnStatus() == BnkSeekEditForm.RET_OK) {
+            bnkSeek = dlg.getObj();
+            try {
+                BnkDbUtils.editOneEntity(bnkSeek);
+                bnkSeekModel.addRow(bnkSeek);
+                BNKSEEK.setModel(bnkSeekModel);
+                BNKSEEK.changeSelection(bnkSeekModel.getRowCount(), 0, false, false);
+
+                //прокрутить. jse tutorial
+                JViewport viewport = (JViewport) BNKSEEK.getParent();
+                Rectangle rect = BNKSEEK.getCellRect(BNKSEEK.getSelectedRow(), 0, true);
+                Rectangle r2 = viewport.getVisibleRect();
+                BNKSEEK.scrollRectToVisible(new Rectangle(rect.x, rect.y, (int) r2.getWidth(), (int) r2.getHeight()));
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "error", JOptionPane.ERROR_MESSAGE);
+                LOGGER.error("", ex);
+            }
+        }
+
+    }//GEN-LAST:event_addButtonActionPerformed
+
+    private void filterButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_filterButtonActionPerformed
+        Map<String, String> filter = new HashMap<>();
+        filter.put("newnum", newnumFilter.getText());
+        ReferenceItem item = regComboBox.getItemAt(regComboBox.getSelectedIndex());
+        filter.put("rgn", item.getCode());
+        item = pznComboBox.getItemAt(pznComboBox.getSelectedIndex());
+        filter.put("pzn", item.getCode());
+        try {
+            refreshBnkSeek(filter);
+        } catch (IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
+            LOGGER.error(ex.getMessage(), ex);
+        }
+    }//GEN-LAST:event_filterButtonActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        try {
+            refreshBnkSeek(null);
+        } catch (IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
+            LOGGER.error(ex.getMessage(), ex);
+        }
+    }//GEN-LAST:event_jButton2ActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTable BNKSEEK;
+    private javax.swing.JButton addButton;
+    private javax.swing.JButton editButton;
+    private javax.swing.JButton filterButton;
+    private javax.swing.JPanel filterPanel;
     private javax.swing.JButton jButton2;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JToolBar.Separator jSeparator1;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JButton loadDbfButton;
+    private javax.swing.JTextField newnumFilter;
+    private javax.swing.JComboBox< ReferenceItem> pznComboBox;
+    private javax.swing.JToolBar referenceToolBar;
+    private javax.swing.JButton refreshButton;
+    private javax.swing.JComboBox<ReferenceItem> regComboBox;
+    private javax.swing.JButton removeButton;
+    private javax.swing.JLabel statusBar;
     // End of variables declaration//GEN-END:variables
+
+    private void postInit() {
+        try {
+            if (BnkDbUtils.countBnkSeek() != 0) {
+                refreshBnkSeek(null);
+            }
+
+            List<ReferenceItem> list = BnkDbUtils.loadAllReferenceItem(Pzn.class);
+            list.add(0, new Pzn("", "Сбросить значение фильтра"));
+            ComboBoxModel<ReferenceItem> pznModel = new DefaultComboBoxModel(list.toArray());
+            pznComboBox.setModel(pznModel);
+
+            list = BnkDbUtils.loadAllReferenceItem(Reg.class);
+            list.add(0, new Reg("", "Сбросить значение фильтра"));
+            pznModel = new DefaultComboBoxModel(list.toArray());
+            regComboBox.setModel(pznModel);
+
+        } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException | SQLException ex) {
+            LOGGER.error(ex.getMessage());
+        }
+    }
 }
