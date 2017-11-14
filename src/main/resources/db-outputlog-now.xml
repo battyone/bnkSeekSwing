@@ -1,2 +1,74 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd"/>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet author="vassaeve (generated)" id="1510681486646-1">
+        <createTable tableName="BNKSEEK">
+            <column name="NEWNUM" type="VARCHAR(9)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REAL" type="VARCHAR(4)"/>
+            <column name="PZN" type="VARCHAR(2)"/>
+            <column name="UER" type="VARCHAR(1)"/>
+            <column name="RGN" type="VARCHAR(2)"/>
+            <column name="IND" type="VARCHAR(6)"/>
+            <column name="TNP" type="VARCHAR(1)"/>
+            <column name="NNP" type="VARCHAR(25)"/>
+            <column name="ADR" type="VARCHAR(30)"/>
+            <column name="RKC" type="VARCHAR(9)"/>
+            <column name="NAMEP" type="VARCHAR(45)"/>
+            <column name="TELEF" type="VARCHAR(25)"/>
+            <column name="REGN" type="VARCHAR(9)"/>
+            <column name="OKPO" type="VARCHAR(8)"/>
+            <column name="DT_IZM" type="date"/>
+            <column name="KSNP" type="VARCHAR(20)"/>
+            <column name="DATE_IN" type="date"/>
+            <column name="DATE_CH" type="date"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-2">
+        <createTable tableName="PZN">
+            <column name="PZN" type="VARCHAR(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR(200)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-3">
+        <createTable tableName="REG">
+            <column name="RGN" type="VARCHAR(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR(200)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-4">
+        <createTable tableName="TNP">
+            <column name="TNP" type="VARCHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FULLNAME" type="VARCHAR(200)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-5">
+        <createTable tableName="UER">
+            <column name="UER" type="VARCHAR(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="UERNAME" type="VARCHAR(200)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-6">
+        <addPrimaryKey columnNames="NEWNUM" constraintName="SYS_PK_10110" tableName="BNKSEEK"/>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-7">
+        <addPrimaryKey columnNames="PZN" constraintName="SYS_PK_10114" tableName="PZN"/>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-8">
+        <addPrimaryKey columnNames="RGN" constraintName="SYS_PK_10118" tableName="REG"/>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-9">
+        <addPrimaryKey columnNames="TNP" constraintName="SYS_PK_10122" tableName="TNP"/>
+    </changeSet>
+    <changeSet author="vassaeve (generated)" id="1510681486646-10">
+        <addPrimaryKey columnNames="UER" constraintName="SYS_PK_10126" tableName="UER"/>
+    </changeSet>
+</databaseChangeLog>
