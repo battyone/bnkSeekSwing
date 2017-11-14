@@ -10,7 +10,6 @@ import com.cbr.bankseekswing.pojo.Reg;
 import com.cbr.bankseekswing.pojo.Tnp;
 import com.cbr.bankseekswing.pojo.Uer;
 import com.cbr.bankseekswing.utils.BnkDbUtils;
-import static com.cbr.bankseekswing.utils.BnkDbUtils.getConnection;
 import com.cbr.bankseekswing.utils.EntityDescriptions;
 import com.linuxense.javadbf.DBFReader;
 import com.linuxense.javadbf.DBFRow;
@@ -294,7 +293,7 @@ public class MainFrame extends javax.swing.JFrame {
                             int count = 0;
                             try {
 
-                                conn = getConnection();
+                                conn = BnkDbUtils.getConnection();
                                 reader = new DBFReader(inputStream, Charset.forName("cp866"), false);
 
                                 ps = conn.prepareStatement(EntityDescriptions.BNKSEEK.getINSERT_SQL());
@@ -529,18 +528,19 @@ public class MainFrame extends javax.swing.JFrame {
         if (dlg.getReturnStatus() == BnkSeekEditForm.RET_OK) {
             bnkSeek = dlg.getObj();
             try {
-                BnkDbUtils.editOneEntity(bnkSeek);
+                BnkDbUtils.createOneEntity(bnkSeek);
                 bnkSeekModel.addRow(bnkSeek);
                 BNKSEEK.setModel(bnkSeekModel);
-                BNKSEEK.changeSelection(bnkSeekModel.getRowCount(), 0, false, false);
 
                 //прокрутить. jse tutorial
                 JViewport viewport = (JViewport) BNKSEEK.getParent();
                 Rectangle rect = BNKSEEK.getCellRect(BNKSEEK.getSelectedRow(), 0, true);
                 Rectangle r2 = viewport.getVisibleRect();
                 BNKSEEK.scrollRectToVisible(new Rectangle(rect.x, rect.y, (int) r2.getWidth(), (int) r2.getHeight()));
-
-            } catch (Exception ex) {
+                
+                BNKSEEK.changeSelection(bnkSeekModel.getRowCount(), 0, false, false);
+                
+            } catch (IOException | ClassNotFoundException | IllegalAccessException | SQLException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "error", JOptionPane.ERROR_MESSAGE);
                 LOGGER.error("", ex);
             }

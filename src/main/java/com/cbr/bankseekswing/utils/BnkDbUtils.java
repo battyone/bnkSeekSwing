@@ -119,7 +119,7 @@ public class BnkDbUtils {
             conn = getConnection();
             ps = conn.prepareStatement(EntityDescriptions.BNKSEEK.getINSERT_SQL());
 
-            updatePs(ps, entity, true);
+            updatePs(ps, entity, false);
 
             ps.executeUpdate();
         } finally {
@@ -198,14 +198,17 @@ public class BnkDbUtils {
             conn = getConnection();
             StringBuilder sql = new StringBuilder("select * from BNKSEEK ");
             if (filter != null) {
-                sql.append(" WHERE ");
                 StringBuilder whereClause = new StringBuilder();
                 filter.forEach((t, u) -> {
                     if (!StringUtils.isEmpty(t) && !StringUtils.isEmpty(u)) {
                         whereClause.append(" and ").append(t).append(" like '%").append(u).append("%'");
                     }
                 });
-                sql.append(whereClause.substring(" and ".length()));
+                if (whereClause.length() != 0) {
+                    sql.append(" WHERE ");
+
+                    sql.append(whereClause.substring(" and ".length()));
+                }
             }
             rs = conn.createStatement().executeQuery(sql.toString());
             while (rs.next()) {

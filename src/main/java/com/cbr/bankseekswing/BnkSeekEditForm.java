@@ -152,6 +152,10 @@ public class BnkSeekEditForm extends javax.swing.JDialog {
             JTextComponent text = ((JTextComponent) comp);
             String value = text.getText().trim();
             FieldUtils.writeField(bnkSeek, name, value, true);
+        } else if (comp instanceof JComboBox) {
+            JComboBox box = (JComboBox) comp;
+            ReferenceItem item = (ReferenceItem) box.getSelectedItem();
+            FieldUtils.writeField(bnkSeek, name, item.getCode(), true);
         }
     }
 
